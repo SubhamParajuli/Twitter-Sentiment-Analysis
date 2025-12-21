@@ -115,7 +115,10 @@ Compute metrics: Accuracy, F1-score, Confusion Matrix
 
 Visualize evaluation results
 
-MLOps Concepts
+
+```
+MLOps Concepts:
+
 
 DVC Versioning: Track dataset, preprocessing, and models
 
@@ -125,7 +128,7 @@ Reproducibility: Any change in data triggers rerun automatically
 
 Experiment Tracking: Keep history of model parameters, metrics, and artifacts
 
-
+```
 Demonstrates XGBoost’s strong performance on text classification with a fully reproducible MLOps workflow.
 
 Future Improvements
@@ -136,6 +139,4 @@ Drift monitoring and retraining logic
 
 Upgrade text representation with transformer embeddings (BERT / RoBERTa)
 
-License
 
-This project is licensed under MIT License.
