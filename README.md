@@ -1,6 +1,6 @@
 # Twitter Sentiment Analysis using XGBoost + MLOps with DVC
 
-![Project Overview](./b4037892-df86-41f6-aada-8d4d6498097f.png)
+
 
 ## Table of Contents
 - [Project Overview](#project-overview)
