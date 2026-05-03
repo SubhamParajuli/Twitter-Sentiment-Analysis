@@ -103,10 +103,6 @@ The `tweet_id` column is dropped during ingestion, and the `sentiment` column is
 
 Go to the project pipeline folder:
 
-```bash
-cd "C:\Users\suvam\Desktop\Twitter-Sentiment-Analysis\ML-pipeline-using-DVC"
-```
-
 Create and activate a virtual environment:
 
 ```bash
