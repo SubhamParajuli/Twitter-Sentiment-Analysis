@@ -1,142 +1,276 @@
-# Twitter Sentiment Analysis using XGBoost + MLOps with DVC
+# Twitter Sentiment Analysis with DVC
 
+A reproducible machine learning pipeline for binary Twitter sentiment analysis. The project uses DVC to version pipeline stages and generated artifacts, from data ingestion through preprocessing, feature engineering, model training, and evaluation.
 
+The pipeline currently classifies tweets into two sentiment classes:
+
+- `happiness` -> `1`
+- `sadness` -> `0`
 
 ## Table of Contents
-- [Project Overview](#project-overview)
-- [Dataset](#dataset)
-- [Project Structure](#project-structure)
-- [Installation](#installation)
-- [Pipeline Implementation](#pipeline-implementation)
-- [MLOps Concepts](#mlops-concepts)
-- [Results](#results)
-- [Future Improvements](#future-improvements)
-- [License](#license)
 
----
+- [Project Overview](#project-overview)
+- [Repository Layout](#repository-layout)
+- [Pipeline Stages](#pipeline-stages)
+- [Dataset](#dataset)
+- [Tech Stack](#tech-stack)
+- [Setup](#setup)
+- [Run the Pipeline](#run-the-pipeline)
+- [Run Individual Stages](#run-individual-stages)
+- [Outputs](#outputs)
+- [DVC Workflow](#dvc-workflow)
+- [Troubleshooting](#troubleshooting)
+- [Future Improvements](#future-improvements)
 
 ## Project Overview
-This project performs **sentiment analysis on Twitter data** using **XGBoost** and integrates **MLOps practices** such as **data & model versioning using DVC**. The goal is to build a **reproducible and scalable ML pipeline** that tracks datasets, preprocessing steps, model artifacts, and experiments efficiently.
 
-**Key Features:**
-- Text preprocessing, feature engineering, and XGBoost classification
-- End-to-end ML pipeline in `src/` folder
-- DVC for **data, model, and pipeline version control**
-- Reproducible experiments and evaluation metrics tracking
-- Streamlined workflow for MLOps concepts demonstration
+This project demonstrates a small MLOps workflow for text classification using Twitter sentiment data. It downloads a tweet emotions dataset, filters it to two sentiment categories, cleans the text, converts tweets into Bag-of-Words features, trains a classifier, and writes evaluation metrics.
 
----
+The main project code is inside:
 
-## Dataset
-The dataset contains Twitter posts and corresponding sentiment labels.
-
-- Features: `tweet_text`
-- Target: `sentiment` (positive/negative/neutral)
-- Stored under the `data/` folder and tracked using DVC
-
----
-
-## Project Structure
 ```text
 ML-pipeline-using-DVC/
-│
-├── .dvc/                       # DVC cache and configuration
-├── data/                        # Raw and processed data tracked by DVC
-├── notebook/                    # Jupyter notebooks for EDA and experiments
-├── src/                         # Python scripts for the ML pipeline
-│   ├── data_ingestion.py        # Load and version datasets
-│   ├── data_preprocessing.py    # Clean and transform text data
-│   ├── feature_engineering.py   # Generate features using TF-IDF
-│   ├── model_building.py        # Train XGBoost classifier
-│   └── model_evaluation.py      # Evaluate model and generate metrics
-├── dvc.yaml                     # DVC pipeline stages
-├── dvc.lock                     # Locked pipeline state
-├── requirements.txt             # Python dependencies
-└── README.md                    # Project documentation
-
 ```
-Installation
 
-Clone the repository:
+The root folder contains repository-level Git and DVC metadata plus this README.
+
+## Repository Layout
+
+```text
+Twitter-Sentiment-Analysis/
+|-- .dvc/                         # Root DVC metadata
+|-- .dvcignore
+|-- .gitignore
+|-- README.md                     # Project documentation
+`-- ML-pipeline-using-DVC/
+    |-- .dvc/                     # DVC metadata for the ML pipeline
+    |-- .dvcignore
+    |-- .gitignore
+    |-- dvc.yaml                  # DVC pipeline definition
+    |-- dvc.lock                  # Locked pipeline state
+    |-- requirements.txt          # Python dependencies
+    |-- notebook/
+    |   `-- twitter.ipynb         # Notebook for exploration/experiments
+    |-- data/
+    |   `-- .gitignore            # Generated data is ignored/tracked by DVC
+    `-- src/
+        |-- data_ingestion.py
+        |-- data_preprocessing.py
+        |-- feature_engineering.py
+        |-- model_building.py
+        `-- model_evaluation.py
 ```
-git clone <your-repo-url>
-cd ML-pipeline-using-DVC
+
+## Pipeline Stages
+
+The DVC pipeline is defined in `ML-pipeline-using-DVC/dvc.yaml`.
+
+| Stage | Script | Purpose | Output |
+| --- | --- | --- | --- |
+| `data_ingestion` | `src/data_ingestion.py` | Downloads the source CSV, filters sentiments, encodes labels, and splits train/test data | `data/raw/` |
+| `data_preprocessing` | `src/data_preprocessing.py` | Cleans tweet text using lowercasing, stopword removal, number removal, punctuation removal, URL removal, and lemmatization | `data/processed/` |
+| `feature_engineering` | `src/feature_engineering.py` | Converts cleaned tweet text into Bag-of-Words vectors with `CountVectorizer(max_features=50)` | `data/features/` |
+| `model_building` | `src/model_building.py` | Trains a `GradientBoostingClassifier` | `model.pkl` |
+| `model_evaluation` | `src/model_evaluation.py` | Evaluates the trained model on the test set | `metrics.json` |
+
+## Dataset
+
+The ingestion script downloads the dataset from:
+
+```text
+https://raw.githubusercontent.com/entbappy/Branching-tutorial/refs/heads/master/tweet_emotions.csv
+```
+
+The original dataset includes multiple emotion labels. This project filters the data to:
+
+- `happiness`
+- `sadness`
+
+The `tweet_id` column is dropped during ingestion, and the `sentiment` column is converted to numeric labels.
+
+## Tech Stack
+
+- Python
+- pandas
+- NumPy
+- scikit-learn
+- NLTK
+- DVC
+- PyYAML
+- XGBoost dependency is listed in `requirements.txt`, although the current training script uses scikit-learn's `GradientBoostingClassifier`
+
+## Setup
+
+Go to the project pipeline folder:
+
+```bash
+cd "C:\Users\suvam\Desktop\Twitter-Sentiment-Analysis\ML-pipeline-using-DVC"
+```
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv venv
+venv\Scripts\activate
 ```
 
 Install dependencies:
-```
 
+```bash
 pip install -r requirements.txt
 ```
 
-Pull data and models via DVC:
-```
-dvc pull
+Check that DVC is available:
+
+```bash
+dvc --version
 ```
 
-Use :
-it will automatically execute ingestion → preprocessing → feature engineering → training → evaluation with full versioning.
-```
+## Run the Pipeline
+
+Run the complete DVC pipeline:
+
+```bash
 dvc repro
 ```
 
+DVC will execute only the stages that are missing, outdated, or affected by changed dependencies.
 
+The pipeline order is:
 
-Pipeline Implementation
-1. Data Ingestion (src/data_ingestion.py)
-
-Load raw Twitter data
-
-Version data using DVC
-
-2. Data Preprocessing (src/data_preprocessing.py)
-
-Clean tweets (remove punctuation, stopwords)
-
-Encode categorical variables
-
-Normalize numerical features
-
-3. Feature Engineering (src/feature_engineering.py)
-
-Transform text into TF-IDF vectors
-
-Prepare feature matrix for XGBoost
-
-4. Model Building (src/model_building.py)
-
-Train XGBoost classifier
-
-Save trained model artifact tracked by DVC
-
-5. Model Evaluation (src/model_evaluation.py)
-
-Compute metrics: Accuracy, F1-score, Confusion Matrix
-
-Visualize evaluation results
-
-
+```text
+data_ingestion -> data_preprocessing -> feature_engineering -> model_building -> model_evaluation
 ```
-MLOps Concepts:
 
+## Run Individual Stages
 
-DVC Versioning: Track dataset, preprocessing, and models
+You can also run scripts manually from inside `ML-pipeline-using-DVC/`.
 
-Pipeline Automation: Run full pipeline stages with dvc repro
+Data ingestion:
 
-Reproducibility: Any change in data triggers rerun automatically
-
-Experiment Tracking: Keep history of model parameters, metrics, and artifacts
-
+```bash
+python src/data_ingestion.py
 ```
-Demonstrates XGBoost’s strong performance on text classification with a fully reproducible MLOps workflow.
 
-Future Improvements
+Data preprocessing:
 
-Real-time sentiment analysis using csv dataser
+```bash
+python src/data_preprocessing.py
+```
 
-Drift monitoring and retraining logic
+Feature engineering:
 
-Upgrade text representation with transformer embeddings (BERT / RoBERTa)
+```bash
+python src/feature_engineering.py
+```
 
+Model training:
 
+```bash
+python src/model_building.py
+```
+
+Model evaluation:
+
+```bash
+python src/model_evaluation.py
+```
+
+## Outputs
+
+After running the pipeline, these artifacts are generated:
+
+```text
+ML-pipeline-using-DVC/
+|-- data/
+|   |-- raw/
+|   |   |-- train.csv
+|   |   `-- test.csv
+|   |-- processed/
+|   |   |-- train_processed.csv
+|   |   `-- test_processed.csv
+|   `-- features/
+|       |-- train_bow.csv
+|       `-- test_bow.csv
+|-- model.pkl
+`-- metrics.json
+```
+
+`metrics.json` contains:
+
+- `accuracy`
+- `precision`
+- `recall`
+- `auc`
+
+## DVC Workflow
+
+Show the pipeline DAG:
+
+```bash
+dvc dag
+```
+
+Check pipeline status:
+
+```bash
+dvc status
+```
+
+Reproduce the pipeline:
+
+```bash
+dvc repro
+```
+
+Track newly generated pipeline files:
+
+```bash
+git add dvc.yaml dvc.lock .gitignore
+git add src/ requirements.txt README.md
+git commit -m "Update sentiment analysis pipeline"
+```
+
+If a DVC remote is configured, push DVC-tracked artifacts:
+
+```bash
+dvc push
+```
+
+To fetch artifacts from a configured DVC remote:
+
+```bash
+dvc pull
+```
+
+## Troubleshooting
+
+If NLTK resources are missing, rerun the preprocessing stage. The script downloads `wordnet` and `stopwords` automatically:
+
+```bash
+python src/data_preprocessing.py
+```
+
+If output folders already exist and a script raises a folder creation error, remove the generated output folder for that stage or run through DVC so it manages the stage outputs:
+
+```bash
+dvc repro
+```
+
+If data ingestion fails, check your internet connection because the raw dataset is downloaded from GitHub.
+
+If `dvc pull` does not download anything, confirm that a DVC remote is configured:
+
+```bash
+dvc remote list
+```
+
+## Future Improvements
+
+- Save the fitted vectorizer so new tweets can be transformed consistently at inference time
+- Add a prediction script or API for user-provided tweets
+- Replace Bag-of-Words with TF-IDF or transformer embeddings
+- Add hyperparameter tuning
+- Add confusion matrix and classification report outputs
+- Add automated tests for preprocessing and pipeline stages
+- Configure and document a DVC remote for artifact sharing
